@@ -1,6 +1,7 @@
 (defpackage :temporary-file
   (:use :cl)
   (:export #:open-temporary
+           #:with-output-to-temporary-file
            #:with-open-temporary-file))
 
 (in-package :temporary-file)
