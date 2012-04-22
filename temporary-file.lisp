@@ -5,16 +5,14 @@
 
 (in-package :temporary-file)
 
-(defparameter *default-temporary-directory*
-  #-windows (load-time-value (or (directory-from-environment "TMPDIR")
-                                 #P"/tmp/"))
-  #+windows (load-time-value (or (directory-from-environment "TEMP")
-                                 (error 'missing-temp-environment-variable))))
-
 (eval-when (:load-toplevel :execute)
-  (when (and (null (logical-pathname-translations "TEMPORARY-FILES"))
-             (probe-file *default-temporary-directory*))
-    (setf (logical-pathname-translations "TEMPORARY-FILES") `(("*.*.*" ,*default-temporary-directory*)))))
+  (when (null (logical-pathname-translations "TEMPORARY-FILES"))
+    (alexandria:if-let (default-temporary-directory #-windows (load-time-value (or (directory-from-environment "TMPDIR")
+                                                                                   (probe-file #P"/tmp/")))
+                                                    #+windows (load-time-value (or (directory-from-environment "TEMP")
+                                                                                   (error 'missing-temp-environment-variable))))
+      (setf (logical-pathname-translations "TEMPORARY-FILES") `(("*.*.*" ,*default-temporary-directory*)))
+      (warn "could not automatically determine a default mapping for TEMPORARY-FILES"))))
 
 (define-condition missing-temp-environment-variable (error)
   ()
@@ -63,17 +61,11 @@
 
 ;; locking for multi-threaded operation with unsafe random function
 
-#+bordeaux-threads
 (defvar *create-file-name-lock* (bordeaux-threads:make-lock "Temporary File Name Creation Lock"))
 
-#+bordeaux-threads
 (defmacro with-file-name-lock-held (() &body body)
   `(bordeaux-threads:with-lock-held (*create-file-name-lock*)
      ,@body))
-
-#-bordeaux-threads
-(defmacro with-file-name-lock-held (() &body)
-  `(progn ,@body))
 
 (defun generate-random-string ()
   (with-file-name-lock-held ()
@@ -143,9 +135,14 @@
                        :defaults defaults
                        :max-tries max-tries)))
 
-(defmacro with-open-temporary-file ((stream &rest args) &body body)
+(defmacro with-open-temporary-file ((stream &rest args &key (keep t)) &body body)
   "Create a temporary file using OPEN-TEMPORARY with ARGS and run BODY
   with STREAM bound to the temporary file stream.  See OPEN-TEMPORARY
-  for permitted options."
+  for permitted options.  If KEEP is set to NIL, the file is deleted
+  when the body is exited."
   `(with-open-stream (,stream (open-temporary ,@args))
-     ,@body))
+     (unwind-protect
+          (progn ,@body)
+       (unless ,keep
+         (when (probe-file (pathname ,stream))
+           (delete-file (pathname ,stream)))))))
