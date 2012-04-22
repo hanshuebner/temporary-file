@@ -1,0 +1,52 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<?xml-stylesheet type='text/xsl' href='clixdoc.xsl' ?>
+<clix:documentation xmlns='http://www.w3.org/1999/xhtml' xmlns:clix='http://bknr.net/clixdoc'>
+  <clix:title>TEMPORARY-FILE - A Common Lisp library to create temporary files</clix:title>
+  <clix:short-description>
+    Portable operators to create temporary files.
+  </clix:short-description>
+  <blockquote>
+    <clix:chapter name='abstract' title='Abstract'>
+      <p>
+        This Common Lisp library implements a portable way to generate
+        files with unique names.
+      </p>
+      <p>
+        This library does not directly address security issues.  The
+        application that uses it needs to take additional measures if
+        it is important that files created by one process cannot be
+        accessed by other, unrelated processes.  This can be done by
+        using the system dependent security mechanisms like default
+        file permissions or access control lists.
+      </p>
+    </clix:chapter>
+  </blockquote>
+  <clix:chapter name='Installation'>
+    TEMPORARY-FILE is self contained and does not have any mandatory
+    dependencies.  It interacts with the <a
+    href='http://common-lisp.net/project/bordeaux-threads/'>Bordeaux
+    Threads</a> portability library to lock the generation of file names.
+  </clix:chapter>
+  <clix:chapter name='Default temporary file directory'>
+    By default, temporary files are created in a system specific
+    directory that defaults based on operating system conventions.  On
+    Unix and Unix-like systems, the directory <tt>/tmp/</tt> is used
+    by default.  It can be overridden by setting the <tt>TMPDIR</tt>
+    environment variable.  On Windows, the value of the environment
+    variable <tt>TEMP</tt> is used.  If it is not set, temporary file
+    creation will fail.
+  </clix:chapter>
+  <clix:chapter name='Overriding the temporary file directory'>
+    The Lisp application can set the directory where temporary files
+    are created by the way of the "TEMPORARY-FILES" logical pathname
+    host:
+
+<pre>(setf (logical-pathname-translations "TEMPORARY-FILES") '(("*.*.*" "/var/tmp/")))</pre>
+
+    This would set the directory for temporary files to
+    <tt>/var/tmp/</tt>.  For more information about logical pathnames,
+    please refer to <a href="http://www.cs.cmu.edu/afs/cs/project/ai-repository/ai/html/cltl/clm/node208.html#SECTION002715000000000000000">
+  </clix:chapter>
+  <clix:chapter name='Creating files with unique names'>
+  </clix:chapter>
+</clix:documentation>
