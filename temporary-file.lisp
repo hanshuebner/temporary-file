@@ -135,6 +135,15 @@
                        :defaults defaults
                        :max-tries max-tries)))
 
+(defmacro with-output-to-temporary-file ((stream &rest args) &body body)
+  "Create a temporary file using OPEN-TEMPORARY with ARGS and run BODY
+  with STREAM bound to the temporary file stream.  Returns the
+  pathname of the file that has been created.  See OPEN-TEMPORARY for
+  permitted options."
+  `(with-open-stream (,stream (open-temporary ,@args))
+     ,@body
+     (pathname ,stream)))
+
 (defmacro with-open-temporary-file ((stream &rest args &key (keep t)) &body body)
   "Create a temporary file using OPEN-TEMPORARY with ARGS and run BODY
   with STREAM bound to the temporary file stream.  See OPEN-TEMPORARY
