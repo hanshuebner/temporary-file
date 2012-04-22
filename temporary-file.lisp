@@ -12,7 +12,7 @@
                                                                                    (probe-file #P"/tmp/")))
                                                     #+windows (load-time-value (or (directory-from-environment "TEMP")
                                                                                    (error 'missing-temp-environment-variable))))
-      (setf (logical-pathname-translations "TEMPORARY-FILES") `(("*.*.*" ,*default-temporary-directory*)))
+      (setf (logical-pathname-translations "TEMPORARY-FILES") `(("*.*.*" ,default-temporary-directory)))
       (warn "could not automatically determine a default mapping for TEMPORARY-FILES"))))
 
 (define-condition missing-temp-environment-variable (error)
