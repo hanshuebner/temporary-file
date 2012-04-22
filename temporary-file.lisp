@@ -144,12 +144,13 @@
      ,@body
      (pathname ,stream)))
 
-(defmacro with-open-temporary-file ((stream &rest args &key (keep t)) &body body)
+(defmacro with-open-temporary-file ((stream &rest args &key keep) &body body)
   "Create a temporary file using OPEN-TEMPORARY with ARGS and run BODY
-  with STREAM bound to the temporary file stream.  See OPEN-TEMPORARY
-  for permitted options.  If KEEP is set to NIL, the file is deleted
-  when the body is exited."
-  `(with-open-stream (,stream (open-temporary ,@args))
+  with STREAM bound to the temporary file stream.  By default, the
+  file is deleted when BODY is exited. If KEEP is set to T, the file
+  is not deleted when the body is exited.  See OPEN-TEMPORARY for more
+  permitted options."
+  `(with-open-stream (,stream (open-temporary ,@(alexandria:remove-from-plist args :keep)))
      (unwind-protect
           (progn ,@body)
        (unless ,keep
