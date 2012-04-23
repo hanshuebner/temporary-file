@@ -2,31 +2,17 @@
   (:use :cl)
   (:export #:open-temporary
            #:with-output-to-temporary-file
-           #:with-open-temporary-file))
+           #:with-open-temporary-file
+           #:*default-template*))
 
 (in-package :temporary-file)
 
-(eval-when (:load-toplevel :execute)
-  (when (null (logical-pathname-translations "TEMPORARY-FILES"))
-    (alexandria:if-let (default-temporary-directory #-windows (load-time-value (or (directory-from-environment "TMPDIR")
-                                                                                   (probe-file #P"/tmp/")))
-                                                    #+windows (load-time-value (or (directory-from-environment "TEMP")
-                                                                                   (error 'missing-temp-environment-variable))))
-      (setf (logical-pathname-translations "TEMPORARY-FILES") `(("*.*.*" ,default-temporary-directory)))
-      (warn "could not automatically determine a default mapping for TEMPORARY-FILES"))))
+(defparameter *default-template* "TEMPORARY-FILES:TEMP-%")
 
-(define-condition missing-temp-environment-variable (error)
-  ()
-  (:report (lambda (condition stream)
-             (declare (ignore condition))
-             (format stream "the TEMP environment variable has not been found, cannot continue"))))
-
-(defparameter *max-tries* 10000)
-
-(defvar *temporary-file-random-state* (make-random-state t))
+(defvar *name-random-state* (make-random-state t))
 
 ;; from XCVB
-(eval-when (:compile-toplevel :load-toplevel :execute)
+(eval-when (:load-toplevel :execute)
   (defun getenv (x)
     "Query the libc runtime environment. See getenv(3)."
     (declare (ignorable x))
@@ -57,8 +43,38 @@
 
   (defun directory-from-environment (environment-variable-name)
     (let ((string (getenv environment-variable-name)))
-      (when string
-        (cl-fad:pathname-as-directory string)))))
+      (when (plusp (length string))
+        (cl-fad:pathname-as-directory string))))
+
+  #+windows
+  (define-condition missing-temp-environment-variable (error)
+    ()
+    (:report (lambda (condition stream)
+               (declare (ignore condition))
+               (format stream "the TEMP environment variable has not been found, cannot continue"))))
+
+  #+windows
+  (defun get-default-temporary-directory ()
+    (or (directory-from-environment "TEMP")
+        (error 'missing-temp-environment-variable)))
+
+  #-windows
+  (defun get-default-temporary-directory ()
+    (or (directory-from-environment "TMPDIR")
+        #-clisp
+        (probe-file #P"/tmp/")
+        #+clisp
+        (and (ext:probe-directory #P"/tmp/")
+             #P"/tmp/")))
+
+  (handler-case
+      (logical-pathname-translations "TEMPORARY-FILES")
+    (#-clisp type-error
+     #+clisp simple-error (e)
+      (declare (ignore e))
+      (alexandria:if-let (default-temporary-directory (get-default-temporary-directory))
+        (setf (logical-pathname-translations "TEMPORARY-FILES") `(("*.*.*" ,default-temporary-directory)))
+        (warn "could not automatically determine a default mapping for TEMPORARY-FILES")))))
 
 ;; locking for multi-threaded operation with unsafe random function
 
@@ -70,7 +86,7 @@
 
 (defun generate-random-string ()
   (with-file-name-lock-held ()
-    (format nil "~:@(~36,8,'0R~)" (random (expt 36 8) *temporary-file-random-state*))))
+    (format nil "~:@(~36,8,'0R~)" (random (expt 36 8) *name-random-state*))))
 
 (define-condition invalid-temporary-pathname-template (error)
   ((string :initarg :string))
@@ -79,47 +95,47 @@
                (format stream "invalid temporary file name template ~S, must contain a percent ~
                                sign that is to be replaced by a random string" string)))))
 
-(defun generate-random-pathname (defaults-string random-string-generator)
-  (let ((percent-position (or (position #\% defaults-string)
-                              (error 'invalid-temporary-pathname-template :string defaults-string))))
+(defun generate-random-pathname (template random-string-generator)
+  (let ((percent-position (or (position #\% template)
+                              (error 'invalid-temporary-pathname-template :string template))))
     (merge-pathnames (concatenate 'string
-                                  (subseq defaults-string 0 percent-position)
+                                  (subseq template 0 percent-position)
                                   (funcall random-string-generator)
-                                  (subseq defaults-string (1+ percent-position))))))
+                                  (subseq template (1+ percent-position))))))
 
 (define-condition cannot-create-temporary-file (error)
-  ((defaults :initarg :defaults)
+  ((template :initarg :template)
    (max-tries :initarg :max-tries))
   (:report (lambda (condition stream)
-             (with-slots (defaults max-tries) condition
-               (format stream "cannot create temporary file with defaults ~A, giving up after ~D attempt~:P"
-                       defaults max-tries)))))
+             (with-slots (template max-tries) condition
+               (format stream "cannot create temporary file with template ~A, giving up after ~D attempt~:P"
+                       template max-tries)))))
 
 (defun open-temporary (&rest open-arguments
 		       &key
-                         (defaults "TEMPORARY-FILES:TEMP-%")
+                         (template *default-template*)
 			 (generate-random-string 'generate-random-string)
-                         (max-tries *max-tries*)
+                         (max-tries 10000)
 			 &allow-other-keys)
   "Create a file with a randomly generated name and return the opened
-   stream.  The resulting pathname is generated from DEFAULTS, which
+   stream.  The resulting pathname is generated from TEMPLATE, which
    is a string representing a pathname template.  A percent sign (%)
    in that string is replaced by a randomly generated string to make
-   the filename unique.  The default for DEFAULTS places temporary
+   the filename unique.  The default for TEMPLATE places temporary
    files in the TEMPORARY-FILES logical pathname host, which is
-   automatically set up in a system specific manner.  The DEFAULTS are
-   merged with *DEFAULT-PATHNAME-DEFAULTS*, so random pathnames
-   relative to that directory can be generated by not specifying a
-   directory in DEFAULTS.
+   automatically set up in a system specific manner.  The file name
+   generated from TEMPLATE is merged with *DEFAULT-PATHNAME-DEFAULTS*,
+   so random pathnames relative to that directory can be generated by
+   not specifying a directory in TEMPLATE.
 
    GENERATE-RANDOM-STRING can be passed to override the default
    function that generates the random name component.  It should
    return a random string consisting of characters that are permitted
-   in a pathname (logical or physical, depending on DEFAULTS).
+   in a pathname (logical or physical, depending on TEMPLATE).
 
    The name of the temporary file can be accessed calling the PATHNAME
    function on STREAM.  For convenience, the temporary file is opened
-   on the physical pathname, i.e. if the DEFAULTS designate a logical
+   on the physical pathname, i.e. if the TEMPLATE designate a logical
    pathname the translation to a physical pathname is performed before
    opening the stream.
 
@@ -127,13 +143,13 @@
    internally up to MAX-TRIES times before giving up and signalling a
    CANNOT-CREATE-TEMPORARY-FILE condition."
   (loop thereis (apply #'open
-                       (translate-logical-pathname (generate-random-pathname defaults generate-random-string))
+                       (translate-logical-pathname (generate-random-pathname template generate-random-string))
                        :direction :output
                        :if-exists nil
-                       (alexandria:remove-from-plist open-arguments :defaults :generate-random-string :max-tries))
+                       (alexandria:remove-from-plist open-arguments :template :generate-random-string :max-tries))
         repeat max-tries
         finally (error 'cannot-create-temporary-file
-                       :defaults defaults
+                       :template template
                        :max-tries max-tries)))
 
 (defmacro with-output-to-temporary-file ((stream &rest args) &body body)
@@ -145,7 +161,7 @@
      ,@body
      (pathname ,stream)))
 
-(defmacro with-open-temporary-file ((stream &rest args &key keep) &body body)
+(defmacro with-open-temporary-file ((stream &rest args &key keep &allow-other-keys) &body body)
   "Create a temporary file using OPEN-TEMPORARY with ARGS and run BODY
   with STREAM bound to the temporary file stream.  By default, the
   file is deleted when BODY is exited. If KEEP is set to T, the file

@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <?xml-stylesheet type='text/xsl' href='clixdoc.xsl' ?>
 <clix:documentation xmlns='http://www.w3.org/1999/xhtml' xmlns:clix='http://bknr.net/clixdoc'>
-  <clix:title>TEMPORARY-FILE - A Common Lisp library to create temporary files</clix:title>
+  <clix:title>TEMPORARY-FILE - A Lisp library to create temporary files</clix:title>
   <clix:short-description>
     Portable operators to create temporary files.
   </clix:short-description>
@@ -9,25 +9,30 @@
     <clix:chapter name='abstract' title='Abstract'>
       <p>
         This Common Lisp library implements a portable way to generate
-        files with unique names.
-      </p>
-      <p>
-        This library does not directly address security issues.  The
-        application that uses it needs to take additional measures if
-        it is important that files created by one process cannot be
-        accessed by other, unrelated processes.  This can be done by
-        using the system dependent security mechanisms like default
-        file permissions or access control lists.
+        files with unique names.  It does not directly address security
+        issues.  The application that uses it needs to take additional
+        measures if it is important that files created by one process
+        cannot be accessed by other, unrelated processes.  This can be
+        done by using the system dependent security mechanisms like
+        default file permissions or access control lists.
       </p>
     </clix:chapter>
   </blockquote>
-  <clix:chapter name='Installation'>
-    TEMPORARY-FILE is self contained and does not have any mandatory
-    dependencies.  It interacts with the <a
-    href='http://common-lisp.net/project/bordeaux-threads/'>Bordeaux
-    Threads</a> portability library to lock the generation of file names.
+  <clix:contents/>
+  <clix:chapter name='installation' title='Download and Installation'>
+    <p>
+      TEMPORARY-FILE depends on a number of supplemental libraries.
+      The recommended installation method is through the <a
+      href='http://www.quicklisp.org/'>Quicklisp</a> library
+      management facility.
+    </p>
+    <p>
+      The upstream repository for TEMPORARY-FILE is on <a
+      href='https://github.com/hanshuebner/temporary-file'>github</a>.
+      Please fork and send pull requests if you have changes.
+    </p>
   </clix:chapter>
-  <clix:chapter name='Default temporary file directory'>
+  <clix:chapter name='default-temporary-directory' title='Default temporary file directory'>
     By default, temporary files are created in a system specific
     directory that defaults based on operating system conventions.  On
     Unix and Unix-like systems, the directory <tt>/tmp/</tt> is used
@@ -36,17 +41,90 @@
     variable <tt>TEMP</tt> is used.  If it is not set, temporary file
     creation will fail.
   </clix:chapter>
-  <clix:chapter name='Overriding the temporary file directory'>
-    The Lisp application can set the directory where temporary files
-    are created by the way of the "TEMPORARY-FILES" logical pathname
-    host:
+  <clix:chapter name='defining-temporary-directory' title='Defining the temporary file directory'>
+    <p>
+      The Lisp application can set the default directory in which
+      temporary files are created by the way of the "TEMPORARY-FILES"
+      logical pathname host:
 
 <pre>(setf (logical-pathname-translations "TEMPORARY-FILES") '(("*.*.*" "/var/tmp/")))</pre>
 
-    This would set the directory for temporary files to
-    <tt>/var/tmp/</tt>.  For more information about logical pathnames,
-    please refer to <a href="http://www.cs.cmu.edu/afs/cs/project/ai-repository/ai/html/cltl/clm/node208.html#SECTION002715000000000000000">
+      This would set the directory for temporary files to
+      <tt>/var/tmp/</tt>.  For more information about logical
+      pathnames, please refer to <a
+      href="http://www.cs.cmu.edu/afs/cs/project/ai-repository/ai/html/cltl/clm/node208.html#SECTION002715000000000000000">Common
+      Lisp the Language, 2nd Edition</a> and <a
+      href="http://clhs.lisp.se/Body/19_.htm">Common Lisp
+      HyperSpec</a>.
+    </p>
+    <p>
+      Physical path names have restrictions regarding the permitted
+      character in file names.  If these restrictions conflict with
+      your desired naming scheme, you can pass a physical pathname as
+      TEMPLATE parameter to the temporary file generation function.
+    </p>
+    <p>
+      Alternatively, the *DEFAULT-TEMPLATE* special variable can be
+      set to define a custom default template for generating names.
+    </p>
+    <clix:subchapter name="examples" title="Examples">
+      <p>
+        Here are a few examples:
+<pre>CL-USER> (logical-pathname-translations "TEMPORARY-FILES")
+(("*.*.*" #P"/var/folders/Yu/YuNMNBNPGoqs9G-1Wmj1dk+++TI/-Tmp-/"))
+CL-USER> (temporary-file:with-open-temporary-file (foo)
+           (pathname foo))
+#P"/var/folders/Yu/YuNMNBNPGoqs9G-1Wmj1dk+++TI/-Tmp-/temp-6rdqdkd1"</pre>
+
+        This used the temporary directory established in the TMPDIR
+        environment variable, by the way of the definition of the
+        TEMPORARY-FILES logical host definition.
+
+<pre>CL-USER> (temporary-file:with-open-temporary-file (foo :template "/tmp/file.with.dots.in.name.%.txt")
+           (pathname foo))
+#P"/tmp/file.with.dots.in.name.2EF04KUJ.txt"</pre>
+
+        Here, a physical pathname was used for the :TEMPLATE keyword
+        argument so that a filename containing multiple dots could be
+        generated.
+
+<pre>CL-USER> (temporary-file:with-open-temporary-file (foo :template "temporary-files:blah-%.txt")
+           (pathname foo))
+#P"/var/folders/Yu/YuNMNBNPGoqs9G-1Wmj1dk+++TI/-Tmp-/blah-72mj450d.txt"</pre>
+
+        This used the TEMPORARY-FILES logical pathname host, but changed
+        the filename slightly.
+
+<pre>CL-USER> *default-pathname-defaults*
+#P"/Users/hans/"
+CL-USER> (temporary-file:with-open-temporary-file (foo :template "blah-%.txt")
+           (pathname foo))
+#P"/Users/hans/blah-5OEJELG2.txt"</pre>
+
+        Here, a relative pathname was used in the template, which caused
+        the file to be generated in the directory established by
+        *DEFAULT-PATHNAME-DEFAULTS*.
+      </p>
+    </clix:subchapter>
   </clix:chapter>
-  <clix:chapter name='Creating files with unique names'>
+  <clix:chapter name='creating-files' title='Creating files with unique names'>
+  </clix:chapter>
+  <clix:chapter name='license' title='License'>
+<pre>Copyright (C) 2012 Hans Huebner
+
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of this software and associated documentation files (the
+"Software"), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.</pre>
   </clix:chapter>
 </clix:documentation>
