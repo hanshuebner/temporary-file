@@ -174,5 +174,4 @@
      (unwind-protect
           (progn ,@body)
        (unless ,keep
-         (when (probe-file (pathname ,stream))
-           (delete-file (pathname ,stream)))))))
+         (delete-file (pathname ,stream))))))
