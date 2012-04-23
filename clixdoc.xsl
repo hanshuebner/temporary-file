@@ -276,6 +276,21 @@
     </p>
   </xsl:template>
 
+  <xsl:template match="clix:logical-pathname-host">
+    <p>
+      [Logical Pathname Host]<br/>
+      <a class="none">
+        <xsl:attribute name="name">
+          <xsl:value-of select="translate(@name, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz')"/>
+        </xsl:attribute>
+        <b><xsl:value-of select="@name"/></b>
+      </a>
+      <blockquote>
+        <xsl:apply-templates select="clix:description"/>
+      </blockquote>
+    </p>
+  </xsl:template>
+
   <xsl:template match="clix:qualifier">
     <!-- method qualifier -->
     <tt><xsl:value-of select="text()"/></tt>
@@ -308,6 +323,13 @@
     <xsl:call-template name="internal-reference">
       <xsl:with-param name="name"><xsl:value-of select="."/></xsl:with-param>
     </xsl:call-template>
+  </xsl:template>
+
+  <xsl:template match="clix:hyperspec">
+    <a>
+      <xsl:attribute name="href">http://www.lispworks.com/documentation/HyperSpec/Body/<xsl:value-of select="@link"/></xsl:attribute>
+      <xsl:value-of select="."/>
+    </a>
   </xsl:template>
 
   <xsl:template match="clix:chapter">

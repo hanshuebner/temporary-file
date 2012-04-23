@@ -8,6 +8,7 @@
 (in-package :temporary-file)
 
 (defparameter *default-template* "TEMPORARY-FILES:TEMP-%")
+(defparameter *max-tries* 10000)
 
 (defvar *name-random-state* (make-random-state t))
 
@@ -115,7 +116,8 @@
 		       &key
                          (template *default-template*)
 			 (generate-random-string 'generate-random-string)
-                         (max-tries 10000)
+                         (max-tries *max-tries*)
+                         (direction :output)
 			 &allow-other-keys)
   "Create a file with a randomly generated name and return the opened
    stream.  The resulting pathname is generated from TEMPLATE, which
@@ -144,7 +146,7 @@
    CANNOT-CREATE-TEMPORARY-FILE condition."
   (loop thereis (apply #'open
                        (translate-logical-pathname (generate-random-pathname template generate-random-string))
-                       :direction :output
+                       :direction direction
                        :if-exists nil
                        (alexandria:remove-from-plist open-arguments :template :generate-random-string :max-tries))
         repeat max-tries
@@ -163,10 +165,11 @@
 
 (defmacro with-open-temporary-file ((stream &rest args &key keep &allow-other-keys) &body body)
   "Create a temporary file using OPEN-TEMPORARY with ARGS and run BODY
-  with STREAM bound to the temporary file stream.  By default, the
-  file is deleted when BODY is exited. If KEEP is set to T, the file
-  is not deleted when the body is exited.  See OPEN-TEMPORARY for more
-  permitted options."
+  with STREAM bound to the temporary file stream.  Returns the values
+  returned by BODY.  By default, the file is deleted when BODY is
+  exited. If a true value is passed in KEEP, the file is not deleted
+  when the body is exited.  See OPEN-TEMPORARY for more permitted
+  options."
   `(with-open-stream (,stream (open-temporary ,@(alexandria:remove-from-plist args :keep)))
      (unwind-protect
           (progn ,@body)
