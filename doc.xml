@@ -63,7 +63,7 @@
       <tt>/var/tmp/</tt>.  For more information about logical
       pathnames, please refer to <a
       href="http://www.cs.cmu.edu/afs/cs/project/ai-repository/ai/html/cltl/clm/node208.html#SECTION002715000000000000000">Common
-      Lisp the Language, 2nd Edition</a> and <a
+      Lisp the Language, 2nd Edition</a> and the <a
       href="http://clhs.lisp.se/Body/19_.htm">Common Lisp
       HyperSpec</a>.
     </p>
