@@ -172,7 +172,7 @@ CL-USER> (temporary-file:<clix:ref>with-open-temporary-file</clix:ref> (foo :tem
         </p>
         <p>
           Any unrecognized keyword arguments are passed to the call to
-          <clix:hyperspec link="f_open.htm">OPEN</clix:hyperspec>.
+          <clix:hyperspec link="f_open.htm">open</clix:hyperspec>.
         </p>
       </clix:description>
     </clix:function>
