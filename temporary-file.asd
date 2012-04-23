@@ -2,5 +2,8 @@
 (defsystem :temporary-file
     :description "Temporary file creation library"
   :serial t
-  :depends-on (:alexandria :bordeaux-threads :cl-fad)
+  :depends-on (:alexandria
+               :bordeaux-threads
+               :cl-fad
+               :unit-test)
   :components ((:file "temporary-file")))
