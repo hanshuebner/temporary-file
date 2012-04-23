@@ -71,8 +71,7 @@
   (handler-case
       (logical-pathname-translations "TEMPORARY-FILES")
     (#-clisp type-error
-     #+clisp simple-error (e)
-      (declare (ignore e))
+     #+clisp simple-error ()
       (alexandria:if-let (default-temporary-directory (get-default-temporary-directory))
         (setf (logical-pathname-translations "TEMPORARY-FILES") `(("*.*.*" ,default-temporary-directory)))
         (warn "could not automatically determine a default mapping for TEMPORARY-FILES")))))
