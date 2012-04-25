@@ -239,11 +239,11 @@ CL-USER> (temporary-file:<clix:ref>with-open-temporary-file</clix:ref> (foo :tem
       <clix:description>
         This logical pathname host defines where temporary files are
         stored by default.  It is initialized in a suitable system
-        specific fashion: On Linux, the directory specified in the
-        TMPDIR environment variable is used.  If that variable is not
-        set, /tmp is used as the default.  On Windows, the directory
-        specified in the TEMP environment variable is used.  If it is
-        not set, a
+        specific fashion: On Unix and Unix-like systems, the directory
+        specified in the TMPDIR environment variable is used.  If that
+        variable is not set, /tmp is used as the default.  On Windows,
+        the directory specified in the TEMP environment variable is
+        used.  If it is not set, a
         <clix:ref>missing-temp-environment-variable</clix:ref> error
         is signalled.
       </clix:description>
