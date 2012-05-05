@@ -47,19 +47,19 @@
       (when (plusp (length string))
         (cl-fad:pathname-as-directory string))))
 
-  #+windows
+  #+win32
   (define-condition missing-temp-environment-variable (error)
     ()
     (:report (lambda (condition stream)
                (declare (ignore condition))
                (format stream "the TEMP environment variable has not been found, cannot continue"))))
 
-  #+windows
+  #+win32
   (defun get-default-temporary-directory ()
     (or (directory-from-environment "TEMP")
         (error 'missing-temp-environment-variable)))
 
-  #-windows
+  #-win32
   (defun get-default-temporary-directory ()
     (or (directory-from-environment "TMPDIR")
         #-clisp
@@ -92,8 +92,7 @@
   ((string :initarg :string))
   (:report (lambda (condition stream)
              (with-slots (string) condition
-               (format stream "invalid temporary file name template ~S, must contain a percent ~
-                               sign that is to be replaced by a random string" string)))))
+               (format stream "invalid temporary file name template ~S, must contain a percent sign that is to be replaced by a random string" string)))))
 
 (defun generate-random-pathname (template random-string-generator)
   (let ((percent-position (or (position #\% template)
@@ -173,4 +172,5 @@
      (unwind-protect
           (progn ,@body)
        (unless ,keep
+	 (close ,stream)
          (delete-file (pathname ,stream))))))
