@@ -5,5 +5,6 @@
   :depends-on (:alexandria
                :bordeaux-threads
                :cl-fad
+               :cl-ppcre
                :unit-test)
   :components ((:file "temporary-file")))

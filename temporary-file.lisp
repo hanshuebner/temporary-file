@@ -3,7 +3,10 @@
   (:export #:open-temporary
            #:with-output-to-temporary-file
            #:with-open-temporary-file
-           #:*default-template*))
+           #:*default-template*
+           #+win32 #:missing-temp-environment-variable
+           #:invalid-temporary-pathname-template
+           #:cannot-create-temporary-file))
 
 (in-package :temporary-file)
 
@@ -169,8 +172,13 @@
   when the body is exited.  See OPEN-TEMPORARY for more permitted
   options."
   `(with-open-stream (,stream (open-temporary ,@(alexandria:remove-from-plist args :keep)))
-     (unwind-protect
-          (progn ,@body)
-       (unless ,keep
-	 (close ,stream)
-         (delete-file (pathname ,stream))))))
+     #+sbcl
+     (declare (sb-ext:muffle-conditions sb-ext:code-deletion-note))
+     ,(if (and (constantp keep)
+               keep)
+          `(progn ,@body)
+          `(unwind-protect
+                (progn ,@body)
+             (unless ,keep
+               (close ,stream)
+               (delete-file (pathname ,stream)))))))
