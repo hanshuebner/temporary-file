@@ -1,6 +1,8 @@
 
 (defsystem :temporary-file
-    :description "Temporary file creation library"
+  :description "Temporary file creation library"
+  :author "Hans Hübner <hans.huebner@gmail.com>"
+  :license "BSD"
   :serial t
   :depends-on (:alexandria
                :bordeaux-threads
